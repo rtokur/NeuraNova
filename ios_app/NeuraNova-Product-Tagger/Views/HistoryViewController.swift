@@ -19,7 +19,8 @@ class HistoryViewController: UIViewController {
     
     //MARK: - Setup Methods
     func setupViews(){
-        view.backgroundColor = .black.withAlphaComponent(0.8)
+        view.backgroundColor = .white
+        title = "History"
     }
 
     func setupConstraints(){

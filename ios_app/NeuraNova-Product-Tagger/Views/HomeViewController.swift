@@ -15,7 +15,7 @@ class HomeViewController: UIViewController {
         label.text = "Welcome to NeuraNova"
         label.font = UIFont.boldSystemFont(ofSize: 20)
         label.textAlignment = .center
-        label.textColor = .white
+        label.textColor = .black
         return label
     }()
     
@@ -30,7 +30,7 @@ class HomeViewController: UIViewController {
     func setupViews(){
         title = "Home"
         
-        view.backgroundColor = .black.withAlphaComponent(0.8)
+        view.backgroundColor = .white
         view.addSubview(label)
     }
     

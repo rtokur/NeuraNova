@@ -8,6 +8,18 @@
 import UIKit
 
 class MainTabBarController: UITabBarController{
+    
+    private let currentUser: UserModel
+    
+    init(user: UserModel) {
+        self.currentUser = user
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    //MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -25,6 +37,7 @@ class MainTabBarController: UITabBarController{
         setupTabBarAppearance()
     }
     
+    //MARK: - Functions
     private func setupTabBarAppearance() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
