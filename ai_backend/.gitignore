@@ -1,6 +1,9 @@
 # Python cache
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # Virtual env
 venv/
@@ -23,3 +26,18 @@ processed_*
 
 # Notebooks checkpoints
 .ipynb_checkpoints
+
+# API tunnels / dev tools
+ngrok*
+*.exe
+
+# Test & coverage
+.coverage
+htmlcov/
+
+# Model / AI large files
+*.pt
+*.pth
+*.onnx
+*.npy
+*.npz

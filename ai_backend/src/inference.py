@@ -24,24 +24,31 @@ def generate_from_gemini(image_path: str) -> dict:
     Görseli Gemini API'ye gönderir, başlık, açıklama ve etiketleri döner.
     """
     try:
-        # Görseli base64'e çevir
-        with open(image_path, "rb") as f:
-            img_base64 = base64.b64encode(f.read()).decode("utf-8")
-
         # Prompt dosyasını oku
         with open(prompt_path, "r", encoding="utf-8") as pf:
             prompt = pf.read()
 
-        # Model çağrısı
+        # Görseli oku
+        with open(image_path, "rb") as f:
+            img_data = f.read()
+
+        # Model çağrısı (görseli ayrı parametre ile veriyoruz)
         model = genai.GenerativeModel(model_name)
-        response = model.generate_content([prompt, img_base64])
+        response = model.generate_content(
+            contents=[
+                {"role": "user", "parts": [
+                    {"text": prompt},
+                    {"inline_data": {"mime_type": "image/png", "data": img_data}}
+                ]}
+            ]
+        )
 
         raw_text = response.text.strip()
 
-        # Gemini yanıtındaki ```json``` bloklarını temizle
+        # Gemini yanıtındaki gereksiz ```json``` bloklarını temizle
         clean_text = re.sub(r"```json|```", "", raw_text).strip()
 
-        # JSON'a parse et
+        # JSON parse
         try:
             result_json = json.loads(clean_text)
         except json.JSONDecodeError:
