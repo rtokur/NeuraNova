@@ -15,16 +15,14 @@ class HistoryViewController: UIViewController {
         super.viewDidLoad()
         setupViews()
         setupConstraints()
+        setupGradientBackground()
     }
     
     //MARK: - Setup Methods
     func setupViews(){
-        view.backgroundColor = .white
-        title = "History"
     }
 
     func setupConstraints(){
         
     }
-    
 }

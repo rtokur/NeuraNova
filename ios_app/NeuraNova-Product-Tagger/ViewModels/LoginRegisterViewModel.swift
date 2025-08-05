@@ -14,6 +14,7 @@ final class LoginRegisterViewModel {
     var onLoadingStateChange: ((Bool) -> Void)?
     var onError: ((String) -> Void)?
     var onSuccess: ((UserModel) -> Void)?
+    var onSignOut: (() -> Void)?
     
     private let db = Firestore.firestore()
     
@@ -48,6 +49,16 @@ final class LoginRegisterViewModel {
             } else if let uid = result?.user.uid {
                 self?.saveUserInfo(uid: uid, name: name, email: email)
             }
+        }
+    }
+    
+    // MARK: - Logout
+    func signOut() {
+        do {
+            try Auth.auth().signOut()
+            onSignOut?() 
+        } catch {
+            onError?("Çıkış yapılamadı: \(error.localizedDescription)")
         }
     }
     

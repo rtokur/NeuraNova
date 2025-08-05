@@ -162,15 +162,6 @@ class LoginViewController: UIViewController {
     }
     
     //MARK: - Setup Methods
-    private func setupGradientBackground() {
-        let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [UIColor.black.cgColor, UIColor.darkGray.cgColor]
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
-        gradientLayer.frame = view.bounds
-        view.layer.insertSublayer(gradientLayer, at: 0)
-    }
-    
     func setupViews(){
         view.addSubview(scrollView)
         view.addSubview(spinner)
@@ -345,7 +336,6 @@ class LoginViewController: UIViewController {
     
     private func navigateToMain(user: UserModel) {
         let tabBar = MainTabBarController(user: user)
-        tabBar.modalPresentationStyle = .fullScreen
         self.navigationController?.pushViewController(tabBar, animated: true)
     }
     
