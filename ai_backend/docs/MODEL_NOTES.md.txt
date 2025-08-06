@@ -1,0 +1,106 @@
+# 🧠 Kullanılacak Teknolojiler & Yöntemler – Mehmetcan
+
+📄 **Amaç:** Görselden satış başlığı, açıklama ve etiket üreten bir AI destekli sistem kurmak.
+
+---
+
+## 🔧 A. Backend & API Altyapısı
+
+### 1. FastAPI  
+- Python tabanlı modern, hızlı ve asenkron API framework  
+- Alternatif: Flask (sync), Starlette
+
+### 2. Uvicorn  
+- FastAPI’yi çalıştıran ASGI server  
+- Alternatif: Hypercorn
+
+### 3. Python 3.10+  
+- Tip güvenliği ve performans açısından gerekli  
+- Alternatif: >=3.10 zorunlu
+
+---
+
+## 🖼️ B. Görsel İşleme
+
+### 4. Pillow  
+- Görsel format kontrolü ve yeniden boyutlandırma işlemleri  
+- Alternatif: OpenCV, torchvision
+
+---
+
+## 🌐 C. AI Model & Prompt Kullanımı
+
+### 5. Gemini Pro Vision API (Google AI Studio)  
+- Görsellerden başlık/açıklama/etiket üretmek için  
+- Avantajı: Ücretsiz kullanım (Gemini 1.5 Pro Vision gibi modeller kullanılacak)  
+- Alternatifler:  
+  - [BLIP-2 (Salesforce)](https://github.com/salesforce/BLIP)  
+  - [LLaVA / LLaVAR](https://github.com/haotian-liu/LLaVA)
+
+### 6. Prompt Engineering  
+- Kaliteli çıktı için özel cümle tasarımları yapılacak  
+- Versiyonlu promptlar `prompts/` klasöründe tutulacak  
+- Örnek dosyalar: `prompt_caption_v1.txt`, `prompt_tags_alt.txt`
+
+---
+
+## 📡 D. HTTP İstek ve Veri Gönderimi
+
+### 7. HTTPx  
+- FastAPI ile uyumlu async HTTP istemcisi  
+- Alternatif: Aiohttp
+
+---
+
+## 🪵 E. Loglama
+
+### 8. Custom Logging (`logger.py`)  
+- API çağrıları ve hatalar `logs/` klasörüne kaydedilecek  
+- Log dosyaları:  
+  - `logs/api.log`  
+  - `logs/errors.log`  
+  - `logs/system.log`
+
+---
+
+## 🧪 F. Test Ortamı
+
+### 9. Pytest  
+- Otomatik test senaryoları için  
+- Alternatif: unittest
+
+### 10. FastAPI TestClient  
+- Pytest ile API endpoint testleri yazmak için
+
+---
+
+## 📓 G. Prompt & Model Testleri
+
+### 11. Jupyter Notebook  
+- Prompt denemeleri ve model çıktısı analizi için  
+- Kullanım: `notebooks/` klasöründe versiyonlu deneyler yapılacak
+
+---
+
+## 📱 H. iOS Tarafı (Rümeysa)
+
+### 12. SwiftUI  
+- Modern iOS arayüz geliştirme yöntemi
+
+### 13. SnapKit  
+- UI elemanları için AutoLayout kurallarını sade kodla yazmak için
+
+### 14. SkyFloatingLabelTextField  
+- Daha iyi input alanları görünümü ve UX için
+
+### 15. (Opsiyonel) Alamofire  
+- Görseli FastAPI’ye POST etmek için kullanılabilir
+
+---
+
+## 🧩 Ekstra - Geliştirme Detayları
+
+- `.env` → Gizli bilgiler burada tutulur (örneğin Gemini API key)  
+- `.gitignore` → `__pycache__`, `.env`, `logs/`, `outputs/` gibi dosyalar hariç tutulur  
+- `requirements.txt` → Tüm kütüphane bağımlılıkları burada listelenir
+

@@ -1,0 +1,43 @@
+# Python cache
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+venv/
+.env
+*.env
+
+# Logs
+logs/
+*.log
+
+# IDE & OS
+.vscode/
+.DS_Store
+
+# Outputs & temp files
+outputs/
+*.tmp
+temp_*
+processed_*
+
+# Notebooks checkpoints
+.ipynb_checkpoints
+
+# API tunnels / dev tools
+ngrok*
+*.exe
+
+# Test & coverage
+.coverage
+htmlcov/
+
+# Model / AI large files
+*.pt
+*.pth
+*.onnx
+*.npy
+*.npz

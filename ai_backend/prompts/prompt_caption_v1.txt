@@ -1,0 +1,7 @@
+Görseldeki ürün için başlık, kısa açıklama ve 5 etiket üret.
+Çıktıyı JSON formatında ver:
+{
+  "title": "...",
+  "description": "...",
+  "tags": ["...", "...", "...", "...", "..."]
+}
