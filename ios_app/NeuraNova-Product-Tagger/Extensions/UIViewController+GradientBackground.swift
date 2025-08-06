@@ -17,4 +17,31 @@ extension UIViewController {
         view.layer.insertSublayer(gradientLayer, at: 0)
     }
     
+    
+    func showSnackbar(message: String) {
+        let snackbarHeight: CGFloat = 50
+        let snackbar = UIView(frame: CGRect(x: 20, y: view.frame.height, width: view.frame.width - 40, height: snackbarHeight))
+        snackbar.backgroundColor = UIColor.black.withAlphaComponent(0.9)
+        snackbar.layer.cornerRadius = 12
+        snackbar.clipsToBounds = true
+        
+        let label = UILabel(frame: CGRect(x: 16, y: 0, width: snackbar.frame.width - 32, height: snackbarHeight))
+        label.text = message
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        
+        snackbar.addSubview(label)
+        view.addSubview(snackbar)
+        
+        UIView.animate(withDuration: 0.3, animations: {
+            snackbar.frame.origin.y -= snackbarHeight + 40
+        }) { _ in
+            UIView.animate(withDuration: 0.3, delay: 2, options: [], animations: {
+                snackbar.frame.origin.y += snackbarHeight + 40
+            }, completion: { _ in
+                snackbar.removeFromSuperview()
+            })
+        }
+    }
+    
 }

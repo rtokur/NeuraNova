@@ -8,17 +8,44 @@
 import Foundation
 import FirebaseFirestore
 import FirebaseAuth
+import FirebaseStorage
 
 class CreateViewModel {
-    private let db = Firestore.firestore()
-    
     var onLoadingStateChange: ((Bool) -> Void)?
     var onMetadataUpdate: ((ContentModel) -> Void)?
     var onError: ((String) -> Void)?
     var onSaveSuccess: (() -> Void)?
+    var onDeleteSuccess: (() -> Void)?
+    var contents: [ContentModel] = []
+    var onContentsUpdate: (() -> Void)?
+    
+    private let db = Firestore.firestore()
+    
+    func fetchUserContents() {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            print("kullanıcı yok")
+            return
+        }
+        
+        db.collection("users")
+            .document(userId)
+            .collection("content")
+            .getDocuments { [weak self] snapshot, error in
+                if let error = error {
+                    print("Firestore Error: \(error.localizedDescription)")
+                    return
+                }
+                
+                self?.contents = snapshot?.documents.compactMap { doc in
+                    try? doc.data(as: ContentModel.self)
+                } ?? []
+                
+                self?.onContentsUpdate?()
+            }
+    }
     
     func generateMetadata(from image: UIImage) {
-        guard let url = URL(string: "https://5df5061d2be5.ngrok-free.app/generate_metadata") else { return }
+        guard let url = URL(string: "https://41f227f2dba3.ngrok-free.app/generate_metadata") else { return }
         
         onLoadingStateChange?(true)
         
@@ -53,37 +80,142 @@ class CreateViewModel {
             guard let data = data else { return }
             
             do {
-                let decoded = try JSONDecoder().decode(ContentModel.self, from: data)
+                let decodedAPI = try JSONDecoder().decode(APIContentModel.self, from: data)
+                
+                let converted = ContentModel(
+                    title: decodedAPI.title,
+                    description: decodedAPI.description,
+                    tags: decodedAPI.tags,
+                    imageUrl: nil
+                )
+                
                 DispatchQueue.main.async {
-                    self?.onMetadataUpdate?(decoded)
+                    self?.onMetadataUpdate?(converted)
                 }
             } catch {
                 DispatchQueue.main.async {
-                    self?.onError?(error.localizedDescription)
+                    self?.onError?("Metadata format hatası: \(error.localizedDescription)")
                 }
             }
         }.resume()
     }
     
-    func saveMetadata(_ metadata: ContentModel) {
+    func saveMetadata(_ metadata: ContentModel, image: UIImage? = nil) {
         guard let userId = Auth.auth().currentUser?.uid else {
             onError?("Kullanıcı giriş yapmamış")
             return
         }
         
-        let data: [String: Any] = [
-            "title": metadata.title,
-            "description": metadata.description,
-            "tags": metadata.tags,
-            "createdAt": FieldValue.serverTimestamp()
-        ]
+        guard let image = image,
+              let imageData = image.jpegData(compressionQuality: 0.8) else {
+            onError?("Fotoğraf bulunamadı")
+            return
+        }
         
-        db.collection("users").document(userId).collection("metadata").addDocument(data: data) { [weak self] error in
+        let storageRef = Storage.storage().reference()
+            .child("users/\(userId)/images/\(UUID().uuidString).jpg")
+        
+        storageRef.putData(imageData, metadata: nil) { [weak self] metadataStorage, error in
             if let error = error {
-                self?.onError?(error.localizedDescription)
-            } else {
-                self?.onSaveSuccess?()
+                self?.onError?("Fotoğraf yüklenemedi: \(error.localizedDescription)")
+                return
+            }
+            
+            storageRef.downloadURL { url, error in
+                if let error = error {
+                    self?.onError?("Fotoğraf URL alınamadı: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let downloadURL = url else {
+                    self?.onError?("Geçersiz fotoğraf URL’si")
+                    return
+                }
+                
+                let data: [String: Any] = [
+                    "title": metadata.title,
+                    "description": metadata.description,
+                    "tags": metadata.tags,
+                    "imageUrl": downloadURL.absoluteString,
+                    "createdAt": FieldValue.serverTimestamp()
+                ]
+                
+                self?.db.collection("users").document(userId)
+                    .collection("content")
+                    .addDocument(data: data) { error in
+                        if let error = error {
+                            self?.onError?("Metadata kaydedilemedi: \(error.localizedDescription)")
+                        } else {
+                            let docRef = self?.db.collection("users").document(userId)
+                                .collection("content").whereField("imageUrl", isEqualTo: downloadURL.absoluteString)
+                            
+                            docRef?.getDocuments { snapshot, _ in
+                                if let docId = snapshot?.documents.first?.documentID {
+                                    var updatedModel = metadata
+                                    updatedModel.id = docId
+                                    
+                                    DispatchQueue.main.async {
+                                        self?.onMetadataUpdate?(updatedModel)
+                                        self?.onSaveSuccess?()
+                                    }
+                                } else {
+                                    DispatchQueue.main.async {
+                                        self?.onSaveSuccess?()
+                                    }
+                                }
+                            }
+                        }
+                    }
             }
         }
+    }
+    
+    
+    func deleteContent(_ content: ContentModel) {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            onError?("Kullanıcı giriş yapmamış")
+            return
+        }
+        
+        guard let contentId = content.id else {
+            onError?("Silinecek içerik bulunamadı")
+            return
+        }
+        
+        db.collection("users").document(userId)
+            .collection("content").document(contentId)
+            .delete { [weak self] error in
+                if let error = error {
+                    self?.onError?("İçerik silinemedi: \(error.localizedDescription)")
+                    return
+                }
+                
+                if let imageUrl = URL(string: content.imageUrl ?? "") {
+                    let storageRef = Storage.storage().reference(forURL: imageUrl.absoluteString)
+                    storageRef.delete { _ in
+                        self?.refreshAfterDelete(userId: userId)
+                    }
+                } else {
+                    self?.refreshAfterDelete(userId: userId)
+                }
+            }
+    }
+    
+    private func refreshAfterDelete(userId: String) {
+        db.collection("users").document(userId)
+            .collection("content")
+            .getDocuments { [weak self] snapshot, error in
+                if let error = error {
+                    self?.onError?("Liste güncellenemedi: \(error.localizedDescription)")
+                    return
+                }
+                
+                self?.contents = snapshot?.documents.compactMap {
+                    try? $0.data(as: ContentModel.self)
+                } ?? []
+                
+                self?.onContentsUpdate?()
+                self?.onDeleteSuccess?()
+            }
     }
 }

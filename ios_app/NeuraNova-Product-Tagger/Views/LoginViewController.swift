@@ -10,7 +10,16 @@ import UIKit
 class LoginViewController: UIViewController {
     
     private let viewModel = LoginRegisterViewModel()
+    private var initialSegmentIndex: Int
     
+    init(initialSegmentIndex: Int = 0) {
+        self.initialSegmentIndex = initialSegmentIndex
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     //MARK: - UI Elements
     private let scrollView = UIScrollView()
     
@@ -113,6 +122,7 @@ class LoginViewController: UIViewController {
         textField.layer.borderColor = UIColor.lightGray.cgColor
         textField.autocapitalizationType = .none
         textField.setLeftPaddingPoints(12)
+        textField.backgroundColor = .clear
         return textField
     }()
     
@@ -131,6 +141,7 @@ class LoginViewController: UIViewController {
         textField.layer.borderColor = UIColor.lightGray.cgColor
         textField.isSecureTextEntry = true
         textField.autocapitalizationType = .none
+        textField.backgroundColor = .clear
         textField.setLeftPaddingPoints(12)
         return textField
     }()
@@ -157,12 +168,16 @@ class LoginViewController: UIViewController {
         setupGradientBackground()
         setupViews()
         setupConstraints()
-        updateForm(for: 0)
+        segmentedControl.selectedSegmentIndex = initialSegmentIndex
+        updateForm(for: initialSegmentIndex)
         bindViewModel()
+        setupKeyboardObservers()
+        setupTapToDismiss()
     }
     
     //MARK: - Setup Methods
     func setupViews(){
+        view.backgroundColor = .white
         view.addSubview(scrollView)
         view.addSubview(spinner)
         scrollView.addSubview(stackView)
@@ -186,7 +201,7 @@ class LoginViewController: UIViewController {
             make.bottom.equalToSuperview()
         }
         stackView.snp.makeConstraints { make in
-            make.height.width.equalTo(scrollView.frameLayoutGuide)
+            make.width.height.equalTo(scrollView.frameLayoutGuide)
         }
         spinner.snp.makeConstraints { make in
             make.center.equalToSuperview()
@@ -264,7 +279,6 @@ class LoginViewController: UIViewController {
         }
         
         if index == 0 {
-            // Login Mode
             actionButton.setTitle("Login", for: .normal)
             contentStackView.addArrangedSubview(emailLabel)
             contentStackView.addArrangedSubview(emailTextField)
@@ -273,7 +287,6 @@ class LoginViewController: UIViewController {
             contentStackView.addArrangedSubview(actionButton)
             contentStackView.addArrangedSubview(registerLabel)
         } else {
-            // Register Mode
             actionButton.setTitle("Register", for: .normal)
             contentStackView.addArrangedSubview(nameLabel)
             contentStackView.addArrangedSubview(nameTextField)
@@ -343,6 +356,42 @@ class LoginViewController: UIViewController {
         let alert = UIAlertController(title: "Oops!", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+    
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)),
+                                               name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)),
+                                               name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+            let keyboardHeight = keyboardFrame.height
+            if view.frame.origin.y == 0 {
+                UIView.animate(withDuration: 0.3) {
+                    self.view.frame.origin.y -= keyboardHeight / 2
+                }
+            }
+        }
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        if view.frame.origin.y != 0 {
+            UIView.animate(withDuration: 0.3) {
+                self.view.frame.origin.y = 0
+            }
+        }
+    }
+
+    private func setupTapToDismiss() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
 }
 

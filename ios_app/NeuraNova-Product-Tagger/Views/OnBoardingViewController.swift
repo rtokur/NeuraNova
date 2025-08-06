@@ -30,7 +30,10 @@ class OnBoardingViewController: UIViewController {
     
     private lazy var iconImageView : UIImageView = {
         let imageView = UIImageView()
-        imageView.backgroundColor = .blue
+        imageView.image = UIImage(named: "icon")
+        imageView.contentMode = .scaleAspectFit
+        imageView.layer.cornerRadius = 10
+        imageView.clipsToBounds = true
         return imageView
     }()
     
@@ -67,7 +70,7 @@ class OnBoardingViewController: UIViewController {
         let label = UILabel()
         label.font = .systemFont(ofSize: 20)
         label.textColor = .white
-        label.text = "Share your thoughts, connect with friends, and discover the world."
+        label.text = "Snap it. Tag it. Sell it. Let NeuraNova’s AI write perfect titles, descriptions, and tags for you."
         label.textAlignment = .left
         label.numberOfLines = 3
         return label
@@ -79,7 +82,7 @@ class OnBoardingViewController: UIViewController {
         button.setTitleColor(.black, for: .normal)
         button.backgroundColor = .white
         button.layer.cornerRadius = 15
-        button.addTarget(self, action: #selector(signInTapped), for: .touchUpInside)
+        button.addTarget(self, action: #selector(getStartedTapped), for: .touchUpInside)
         return button
     }()
     
@@ -205,7 +208,12 @@ class OnBoardingViewController: UIViewController {
     
     //MARK: - Actions
     @objc private func signInTapped() {
-        let loginVC = LoginViewController()
+        let loginVC = LoginViewController(initialSegmentIndex: 0)
         navigationController?.pushViewController(loginVC, animated: true)
+    }
+
+    @objc private func getStartedTapped() {
+        let registerVC = LoginViewController(initialSegmentIndex: 1) 
+        navigationController?.pushViewController(registerVC, animated: true)
     }
 }

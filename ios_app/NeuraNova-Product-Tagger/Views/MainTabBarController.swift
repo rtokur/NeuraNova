@@ -9,7 +9,7 @@ import UIKit
 
 class MainTabBarController: UITabBarController, TabBarControllerProtocol{
     private let currentUser: UserModel
-    private let tabbarView = TabBarView()
+    let tabbarView = TabBarView()
     
     init(user: UserModel) {
         self.currentUser = user
@@ -41,7 +41,6 @@ class MainTabBarController: UITabBarController, TabBarControllerProtocol{
             let compactButtonWidth: CGFloat = 50
             let spacing: CGFloat = 12
             
-            // Total width hesabı
             let totalWidth = selectedButtonWidth + (compactButtonWidth * (buttonCount - 1)) + (spacing * (buttonCount + 1))
             
             tabbarView.frame = CGRect(
@@ -54,8 +53,8 @@ class MainTabBarController: UITabBarController, TabBarControllerProtocol{
     //MARK: - Protocol Method
     func didTapTabBarButton(_ index: Int) {
         selectedIndex = index
+        tabbarView.setSelectedIndex(index)
     }
-    
     
     func setTabBar(hidden: Bool, animated: Bool = true) {
         let height = tabbarView.frame.height + 20

@@ -24,7 +24,7 @@ class TabBarView: UIView {
         
         // Tabbar background rengi
         backgroundColor = UIColor(named: "484849")!
-        layer.cornerRadius = 20
+        layer.cornerRadius = 30
         layer.masksToBounds = true
         
         setupButtons()
@@ -104,6 +104,19 @@ class TabBarView: UIView {
         }
     }
 
+    func setSelectedIndex(_ index: Int) {
+        buttons[selectedIndex].isSelected = false
+        
+        buttons[index].isSelected = true
+        selectedIndex = index
+        
+        UIView.animate(withDuration: 0.25) {
+            self.selectedBackgroundLayer.frame = self.buttons[index].frame
+            self.layoutIfNeeded()
+        }
+        
+        calculateButtonFrames()
+    }
     
     // MARK: - Background Layer
     private func setupMovingLayer() {

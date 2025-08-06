@@ -12,6 +12,21 @@ class CreateViewController: UIViewController, UIImagePickerControllerDelegate, U
     private var currentMetaData: ContentModel?
     
     //MARK: - UI Elements
+    private let blurEffectView: UIVisualEffectView = {
+        let blurEffect = UIBlurEffect(style: .dark)
+        let view = UIVisualEffectView(effect: blurEffect)
+        view.alpha = 0.6
+        view.isHidden = true
+        return view
+    }()
+    
+    private let activityIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView(style: .large)
+        indicator.color = .white
+        indicator.hidesWhenStopped = true
+        return indicator
+    }()
+    
     private let scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.showsVerticalScrollIndicator = false
@@ -26,184 +41,164 @@ class CreateViewController: UIViewController, UIImagePickerControllerDelegate, U
         return stackView
     }()
     
-    private lazy var imageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
-        imageView.layer.cornerRadius = 10
-        imageView.backgroundColor = .secondarySystemBackground
-        imageView.image = UIImage(systemName: "photo.on.rectangle.angled")
-        imageView.tintColor = .gray
-        imageView.clipsToBounds = true
-        return imageView
+    private let choosePhotoView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor(named: "484849")!
+        view.layer.cornerRadius = 10
+        return view
+    }()
+    
+    private let chooseStackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.spacing = 15
+        stackView.alignment = .center
+        return stackView
+    }()
+    
+    private lazy var generateLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Get the image you want"
+        label.font = .boldSystemFont(ofSize: 17)
+        label.textColor = .white
+        label.textAlignment = .center
+        return label
     }()
     
     private lazy var chooseButton: UIButton = {
         let button = UIButton(type: .system)
         var config = UIButton.Configuration.filled()
-        config.title = "Choose Photo"
-        config.image = UIImage(systemName: "photo.on.rectangle")
+        config.attributedTitle = AttributedString(NSAttributedString(string: "Generate Your Content", attributes: [.font: UIFont.boldSystemFont(ofSize: 15)]))
+        config.image = UIImage(systemName: "plus")
         config.imagePadding = 8
-        config.baseBackgroundColor = .black
-        config.baseForegroundColor = .white
+        config.baseBackgroundColor = .white
+        config.baseForegroundColor = .black
         button.configuration = config
-        button.layer.borderColor = UIColor.white.cgColor
-        button.layer.borderWidth = 1
-        button.layer.cornerRadius = 15
+        button.layer.cornerRadius = 25
         button.addTarget(self, action: #selector(openPickerOptions), for: .touchUpInside)
         return button
     }()
     
-    private lazy var generateButton: UIButton = {
-        let button = UIButton(type: .system)
-        var config = UIButton.Configuration.filled()
-        config.title = "Generate with AI"
-        config.image = UIImage(systemName: "wand.and.stars")
-        config.imagePadding = 8
-        config.cornerStyle = .capsule
-        config.baseBackgroundColor = .white
-        config.baseForegroundColor = .black
-        button.configuration = config
-        button.isHidden = true
-        button.addTarget(self, action: #selector(generateWithAI), for: .touchUpInside)
-        return button
+    private let popularStackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        return stackView
     }()
     
-    private lazy var deleteButton: UIButton = {
+    private lazy var popularLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Popular Contents"
+        label.font = .boldSystemFont(ofSize: 15)
+        label.textColor = .white
+        label.textAlignment = .left
+        return label
+    }()
+    
+    private lazy var seeAllButton: UIButton = {
         let button = UIButton(type: .system)
         var config = UIButton.Configuration.filled()
-        config.title = "Delete Photo"
-        config.image = UIImage(systemName: "trash")
-        config.imagePadding = 8
-        config.baseBackgroundColor = .red
+        config.attributedTitle = AttributedString(NSAttributedString(string: "See All", attributes: [.font: UIFont.systemFont(ofSize: 13)]))
         config.baseForegroundColor = .white
-        config.cornerStyle = .capsule
+        config.baseBackgroundColor = .clear
         button.configuration = config
-        button.isHidden = true
-        button.addTarget(self, action: #selector(deletePhoto), for: .touchUpInside)
+        button.addTarget(self, action: #selector(navigateToHistory), for: .touchUpInside)
         return button
     }()
     
-    // Activity Indicator
-    private let activityIndicator: UIActivityIndicatorView = {
-        let indicator = UIActivityIndicatorView(style: .large)
-        indicator.color = .white
-        indicator.hidesWhenStopped = true
-        return indicator
+    private lazy var popularCollectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumInteritemSpacing = 15
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.delegate = self
+        collectionView.dataSource = self
+        collectionView.backgroundColor = .clear
+        collectionView.register(PopularCollectionViewCell.self, forCellWithReuseIdentifier: "PopularCollectionViewCell")
+        return collectionView
     }()
     
-    // Metadata Labels
-    private let titleLabel = UILabel()
-    private let descriptionLabel = UILabel()
-    private let tagsLabel = UILabel()
-    
-    private lazy var metadataStack: UIStackView = {
-        let stack = UIStackView(arrangedSubviews: [titleLabel, descriptionLabel, tagsLabel])
-        stack.axis = .vertical
-        stack.spacing = 8
-        stack.alignment = .center
-        stack.isHidden = true
-        return stack
-    }()
-    
-    // Approve Button
-    private lazy var approveButton: UIButton = {
-        let button = UIButton(type: .system)
-        var config = UIButton.Configuration.filled()
-        config.title = "Approve & Save"
-        config.image = UIImage(systemName: "checkmark.circle")
-        config.imagePadding = 8
-        config.baseBackgroundColor = .green
-        config.baseForegroundColor = .white
-        config.cornerStyle = .capsule
-        button.configuration = config
-        button.isHidden = true
-        button.addTarget(self, action: #selector(approveMetadata), for: .touchUpInside)
-        return button
-    }()
     //MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupViews()
         setupConstraints()
         setupGradientBackground()
-        bindViewModel()
+        viewModel.onContentsUpdate = { [weak self] in
+            DispatchQueue.main.async {
+                self?.popularCollectionView.reloadData()
+                
+            }
+        }
+        
+        viewModel.fetchUserContents()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        viewModel.fetchUserContents()
     }
     
     //MARK: - Setup Methods
     func setupViews(){
+        view.backgroundColor = .white
         view.addSubview(scrollView)
         scrollView.addSubview(stackView)
-        scrollView.addSubview(stackView)
-        [imageView, chooseButton, generateButton, deleteButton, metadataStack, approveButton, activityIndicator].forEach {
-            stackView.addArrangedSubview($0)
-        }
+        stackView.addArrangedSubview(choosePhotoView)
+        choosePhotoView.addSubview(chooseStackView)
+        chooseStackView.addArrangedSubview(generateLabel)
+        chooseStackView.addArrangedSubview(chooseButton)
+        stackView.addArrangedSubview(popularStackView)
+        popularStackView.addArrangedSubview(popularLabel)
+        popularStackView.addArrangedSubview(seeAllButton)
+        stackView.addArrangedSubview(popularCollectionView)
+        
+        view.addSubview(blurEffectView)
+        blurEffectView.contentView.addSubview(activityIndicator)
     }
     
     func setupConstraints(){
         scrollView.snp.makeConstraints { make in
             make.edges.equalTo(view.safeAreaLayoutGuide).inset(20)
         }
-        
         stackView.snp.makeConstraints { make in
             make.top.bottom.equalTo(scrollView.contentLayoutGuide)
             make.leading.trailing.equalTo(scrollView.frameLayoutGuide)
         }
-        
-        imageView.snp.makeConstraints { make in
-            make.height.equalTo(200)
-            make.leading.trailing.equalToSuperview().inset(30)
+        choosePhotoView.snp.makeConstraints { make in
+            make.width.equalToSuperview()
+            make.height.equalTo(140)
         }
-        [chooseButton, generateButton, deleteButton, approveButton].forEach { button in
-            button.snp.makeConstraints { make in
-                make.height.equalTo(50)
-                make.leading.trailing.equalToSuperview().inset(30)
-            }
+        chooseStackView.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(20)
         }
-        
-        metadataStack.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview().inset(30)
+        generateLabel.snp.makeConstraints { make in
+            make.width.equalToSuperview()
         }
-        
-        activityIndicator.snp.makeConstraints { make in
+        chooseButton.snp.makeConstraints { make in
             make.height.equalTo(50)
-            make.width.equalTo(50)
+            make.width.equalToSuperview()
         }
-    }
-    //MARK: - Functions
-    private func bindViewModel() {
-        viewModel.onLoadingStateChange = { [weak self] isLoading in
-            DispatchQueue.main.async {
-                if isLoading {
-                    self?.activityIndicator.startAnimating()
-                    self?.metadataStack.isHidden = true
-                    self?.approveButton.isHidden = true
-                } else {
-                    self?.activityIndicator.stopAnimating()
-                }
-            }
+        popularStackView.snp.makeConstraints { make in
+            make.height.equalTo(40)
+            make.width.equalToSuperview()
         }
-        
-        viewModel.onMetadataUpdate = { [weak self] metadata in
-            DispatchQueue.main.async {
-                self?.currentMetaData = metadata
-                self?.titleLabel.text = "Title: \(metadata.title)"
-                self?.descriptionLabel.text = "Description: \(metadata.description)"
-                self?.tagsLabel.text = "Tags: \(metadata.tags)"
-                self?.metadataStack.isHidden = false
-                self?.approveButton.isHidden = false
-            }
+        popularLabel.snp.makeConstraints { make in
+            make.height.equalToSuperview()
+        }
+        seeAllButton.snp.makeConstraints { make in
+            make.width.equalTo(70)
+        }
+        popularCollectionView.snp.makeConstraints { make in
+            make.height.equalTo(200)
+            make.width.equalToSuperview()
         }
         
-        viewModel.onError = { [weak self] errorMessage in
-            DispatchQueue.main.async {
-                self?.showAlert(title: "Hata", message: errorMessage)
-            }
+        blurEffectView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
-        
-        viewModel.onSaveSuccess = { [weak self] in
-            DispatchQueue.main.async {
-                self?.showAlert(title: "Başarılı", message: "Metadata kaydedildi.")
-            }
+        activityIndicator.snp.makeConstraints { make in
+            make.center.equalToSuperview()
         }
     }
     
@@ -226,6 +221,13 @@ class CreateViewController: UIViewController, UIImagePickerControllerDelegate, U
         present(alert, animated: true)
     }
     
+    @objc private func navigateToHistory() {
+        if let tabBar = tabBarController as? MainTabBarController {
+            tabBar.selectedIndex = TabBarButton.history.rawValue
+            tabBar.tabbarView.setSelectedIndex(TabBarButton.history.rawValue)
+        }
+    }
+    
     private func openPicker(source: UIImagePickerController.SourceType) {
         let picker = UIImagePickerController()
         picker.delegate = self
@@ -234,26 +236,19 @@ class CreateViewController: UIViewController, UIImagePickerControllerDelegate, U
         present(picker, animated: true)
     }
     
-    @objc private func deletePhoto() {
-        imageView.image = UIImage(systemName: "photo.on.rectangle.angled")
-        chooseButton.isHidden = false
-        generateButton.isHidden = true
-        deleteButton.isHidden = true
-        metadataStack.isHidden = true
-        approveButton.isHidden = true
-    }
-    
-    @objc private func generateWithAI() {
-        guard let selectedImage = imageView.image, selectedImage != UIImage(systemName: "photo.on.rectangle.angled") else {
-            showAlert(title: "Uyarı", message: "Lütfen önce bir fotoğraf seçin.")
-            return
+    private func showLoading(_ show: Bool) {
+        if show {
+            blurEffectView.isHidden = false
+            activityIndicator.startAnimating()
+        } else {
+            UIView.animate(withDuration: 0.3) {
+                self.blurEffectView.alpha = 0
+            } completion: { _ in
+                self.blurEffectView.isHidden = true
+                self.blurEffectView.alpha = 0.6
+                self.activityIndicator.stopAnimating()
+            }
         }
-        viewModel.generateMetadata(from: selectedImage)
-    }
-    
-    @objc private func approveMetadata() {
-        guard let metadata = currentMetaData else { return }
-        viewModel.saveMetadata(metadata)
     }
     
     private func showAlert(title: String, message: String) {
@@ -261,15 +256,68 @@ class CreateViewController: UIViewController, UIImagePickerControllerDelegate, U
         alert.addAction(UIAlertAction(title: "Tamam", style: .default))
         present(alert, animated: true)
     }
-    
     //MARK: - UIImagePickerControllerDelegate
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         if let selected = info[.originalImage] as? UIImage {
-            imageView.image = selected
-            chooseButton.isHidden = true
-            generateButton.isHidden = false
-            deleteButton.isHidden = false
+            viewModel.onLoadingStateChange = { [weak self] isLoading in
+                DispatchQueue.main.async {
+                    self?.showLoading(isLoading)
+                }
+            }
+            
+            viewModel.onMetadataUpdate = { [weak self] generatedContent in
+                guard let self = self else { return }
+                DispatchQueue.main.async {
+                    self.showLoading(false)
+                    let detailVC = ContentDetailViewController(
+                        selectedImage: selected,
+                        contentModel: generatedContent
+                    )
+                    self.navigationController?.pushViewController(detailVC, animated: true)
+                }
+            }
+            
+            viewModel.onError = { [weak self] errorMessage in
+                DispatchQueue.main.async {
+                    self?.showLoading(false)
+                    self?.showAlert(title: "Hata", message: errorMessage)
+                }
+            }
+            
+            viewModel.generateMetadata(from: selected)
         }
         dismiss(animated: true)
     }
+}
+
+extension CreateViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return viewModel.contents.count
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PopularCollectionViewCell", for: indexPath) as! PopularCollectionViewCell
+        let content = viewModel.contents[indexPath.item]
+        cell.configure(with: content)
+        return cell
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let selectedContent = viewModel.contents[indexPath.item]
+        
+        if let url = selectedContent.imageUrl,
+           let URL = URL(string: url){
+            let detailVC = ContentDetailViewController(selectedImage: UIImage(), contentModel: selectedContent)
+            
+            navigationController?.pushViewController(detailVC, animated: true)
+        } else {
+            let detailVC = ContentDetailViewController(selectedImage: UIImage(), contentModel: selectedContent)
+            navigationController?.pushViewController(detailVC, animated: true)
+        }
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: 150, height: 200)
+    }
+    
 }

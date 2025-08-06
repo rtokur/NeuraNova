@@ -24,6 +24,10 @@ class HomeViewController: UIViewController {
     private lazy var iconImageView : UIImageView = {
         let imageView = UIImageView()
         imageView.backgroundColor = .blue
+        imageView.contentMode = .scaleAspectFit
+        imageView.image = UIImage(named: "icon")
+        imageView.layer.cornerRadius = 10
+        imageView.clipsToBounds = true
         return imageView
     }()
     
@@ -42,17 +46,16 @@ class HomeViewController: UIViewController {
         imageView.layer.borderWidth = 5
         imageView.layer.cornerRadius = 10
         imageView.isUserInteractionEnabled = true
-            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(profileImageTapped))
-            imageView.addGestureRecognizer(tapGesture)
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(profileImageTapped))
+        imageView.addGestureRecognizer(tapGesture)
         return imageView
     }()
     
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.minimumLineSpacing = 15
         layout.scrollDirection = .vertical
-        layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
-        layout.itemSize = UICollectionViewFlowLayout.automaticSize
+        layout.minimumLineSpacing = 15
+        layout.estimatedItemSize = .zero
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.register(FeedCollectionViewCell.self, forCellWithReuseIdentifier: FeedCollectionViewCell.identifier)
         cv.delegate = self
@@ -81,9 +84,15 @@ class HomeViewController: UIViewController {
         setupGradientBackground()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        viewModel.fetchAllUsersContents()
+    }
+
     //MARK: - Setup Methods
     func setupViews(){
-        
+        view.backgroundColor = .white
         view.addSubview(iconStackView)
         iconStackView.addArrangedSubview(iconImageView)
         iconStackView.addArrangedSubview(iconLabel)
@@ -115,13 +124,6 @@ class HomeViewController: UIViewController {
     private func bindViewModel() {
         viewModel.onDataUpdate = { [weak self] in
             self?.collectionView.reloadData()
-            self?.collectionView.snp.updateConstraints { make in
-                make.height.equalTo(((self?.collectionView.collectionViewLayout.collectionViewContentSize.height)!))
-            }
-        }
-        
-        viewModel.onError = { error in
-            print("Error: \(error)")
         }
         
         loginViewModel.onSignOut = { [weak self] in
@@ -152,26 +154,62 @@ class HomeViewController: UIViewController {
         
         present(alert, animated: true)
     }
-
+    
 }
 
 // MARK: - CollectionView Delegate & DataSource
 extension HomeViewController: UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 10
+        return viewModel.feedContents.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: FeedCollectionViewCell.identifier, for: indexPath) as? FeedCollectionViewCell else {
             return UICollectionViewCell()
         }
-        cell.configure(userName: "Rumeysa", date: "2h", description: "sdfsdfdsgsdgsdgjsdfkjasflkjadflkjselkjfkasldjjjjjjasdfskldjflksdlfknsdlknvlksndvnsvnlsdnvskldmvlsdmvls", image: UIImage(named: "GetStarted"))
+        
+        let item = viewModel.feedContents[indexPath.item]
+        let dateText = item.content.createdAt?.formatted(date: .numeric, time: .shortened) ?? ""
+        if let url = item.content.imageUrl,
+           let description = item.content.description,
+           let tags = item.content.tags{
+            cell.configure(userName: item.userName,
+                           date: dateText,
+                           description: description,
+                           imageUrl: url,
+                           tags: tags)
+        }
+
         return cell
     }
-    
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+
+    func collectionView(_ collectionView: UICollectionView,
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
         
+        let width = collectionView.bounds.width
+        let dummyCell = FeedCollectionViewCell(frame: CGRect(x: 0, y: 0, width: width, height: .greatestFiniteMagnitude))
+        
+        let item = viewModel.feedContents[indexPath.item]
+        dummyCell.configure(userName: item.userName,
+                            date: item.content.createdAt?.formatted(date: .numeric, time: .shortened) ?? "",
+                            description: item.content.description ?? "",
+                            imageUrl: item.content.imageUrl ?? "",
+                            tags: item.content.tags ?? [])
+        
+        dummyCell.setNeedsLayout()
+        dummyCell.layoutIfNeeded()
+
+        let targetSize = CGSize(width: width, height: UIView.layoutFittingCompressedSize.height)
+        let calculatedHeight = dummyCell.contentView.systemLayoutSizeFitting(
+            targetSize,
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        ).height
+
+        return CGSize(width: width, height: calculatedHeight)
     }
+
 }
 
 extension HomeViewController: UIScrollViewDelegate {
@@ -182,9 +220,9 @@ extension HomeViewController: UIScrollViewDelegate {
         
         if velocity.y > 0 {
             tabBarController.setTabBar(hidden: true)
-        } else if velocity.y < 0 { 
+        } else if velocity.y < 0 {
             tabBarController.setTabBar(hidden: false)
         }
     }
-
+    
 }
